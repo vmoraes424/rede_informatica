@@ -4,7 +4,7 @@ import { Link } from "react-router";
 
 export default function Navbar() {
   return (
-    <header className="sticky mb-10 top-0 z-10 bg-white/80 backdrop-blur-sm h-16 flex justify-between items-center border-b shadow-sm">
+    <header className="sticky mb-10 top-0 z-10 bg-white/80 backdrop-blur-sm h-16 flex justify-between items-center border-b shadow-sm px-12">
       <div className=" max-w-7xl mx-auto flex items-center justify-between w-full">
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-semibold text-primary">

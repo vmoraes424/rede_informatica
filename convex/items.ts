@@ -120,3 +120,65 @@ export const generateUploadUrl = mutation({
     return await ctx.storage.generateUploadUrl();
   },
 });
+
+export const searchItems = query({
+  args: {
+    searchTerm: v.string(),
+    categoryId: v.optional(v.id("categories")),
+  },
+  handler: async (ctx, args) => {
+    let items;
+
+    if (args.categoryId) {
+      // Buscar apenas na categoria específica
+      items = await ctx.db
+        .query("items")
+        .withIndex("by_category", (q) => q.eq("categoryId", args.categoryId!))
+        .collect();
+    } else {
+      // Buscar em todos os itens
+      items = await ctx.db.query("items").collect();
+    }
+
+    // Filtrar por nome ou descrição que contenha o termo de busca
+    const searchTerm = args.searchTerm.toLowerCase();
+    const filteredItems = items.filter(
+      (item) =>
+        item.name.toLowerCase().includes(searchTerm) ||
+        (item.description &&
+          item.description.toLowerCase().includes(searchTerm))
+    );
+
+    // Buscar também por categoria se não foi especificada uma categoria
+    if (!args.categoryId) {
+      const categories = await ctx.db.query("categories").collect();
+      const matchingCategories = categories.filter((category) =>
+        category.name.toLowerCase().includes(searchTerm)
+      );
+
+      // Adicionar itens das categorias que correspondem à busca
+      for (const category of matchingCategories) {
+        const categoryItems = await ctx.db
+          .query("items")
+          .withIndex("by_category", (q) => q.eq("categoryId", category._id))
+          .collect();
+
+        // Adicionar apenas itens que ainda não estão na lista
+        for (const item of categoryItems) {
+          if (
+            !filteredItems.find((existingItem) => existingItem._id === item._id)
+          ) {
+            filteredItems.push(item);
+          }
+        }
+      }
+    }
+
+    return Promise.all(
+      filteredItems.map(async (item) => ({
+        ...item,
+        imageUrl: item.imageId ? await ctx.storage.getUrl(item.imageId) : null,
+      }))
+    );
+  },
+});

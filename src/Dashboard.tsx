@@ -1,10 +1,16 @@
 import { useState } from "react";
-import { useQuery, useMutation, Authenticated } from "convex/react";
+import {
+  useQuery,
+  useMutation,
+  Authenticated,
+  useConvexAuth,
+} from "convex/react";
 import { api } from "../convex/_generated/api";
 import { CategoryForm } from "./CategoryForm";
 import { ItemForm } from "./ItemForm";
 import { toast } from "sonner";
 import type { Id } from "../convex/_generated/dataModel";
+import { Navigate } from "react-router";
 
 export function Dashboard() {
   const categories = useQuery(api.categories.list) || [];
@@ -14,6 +20,7 @@ export function Dashboard() {
   const [showItemForm, setShowItemForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const { isAuthenticated } = useConvexAuth();
 
   const items =
     useQuery(
@@ -23,6 +30,10 @@ export function Dashboard() {
 
   const deleteCategory = useMutation(api.categories.remove);
   const deleteItem = useMutation(api.items.remove);
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   const handleDeleteCategory = async (id: Id<"categories">) => {
     if (confirm("Tem certeza? Isso excluirá todos os itens desta categoria.")) {
@@ -34,6 +45,7 @@ export function Dashboard() {
         }
       } catch (error) {
         toast.error("Falha ao excluir categoria");
+        console.log(error);
       }
     }
   };
@@ -45,13 +57,14 @@ export function Dashboard() {
         toast.success("Item excluído com sucesso");
       } catch (error) {
         toast.error("Falha ao excluir item");
+        console.log(error);
       }
     }
   };
 
   return (
     <Authenticated>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-12">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Painel</h1>
           <p className="text-gray-600">Gerencie suas categorias e itens</p>
@@ -112,7 +125,7 @@ export function Dashboard() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteCategory(category._id);
+                            void handleDeleteCategory(category._id);
                           }}
                           className="text-gray-400 hover:text-red-500 text-sm"
                         >
@@ -185,7 +198,7 @@ export function Dashboard() {
                           Editar
                         </button>
                         <button
-                          onClick={() => handleDeleteItem(item._id)}
+                          onClick={() => void handleDeleteItem(item._id)}
                           className="text-red-500 hover:underline text-sm"
                         >
                           Excluir
