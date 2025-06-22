@@ -8,6 +8,7 @@ import { Toaster } from "sonner";
 import Navbar from "./components/Navbar";
 import { Storefront } from "./Storefront";
 import App from "./App";
+import Barra from "./Barra";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
@@ -19,6 +20,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/loja" element={<Storefront />} />
         <Route path="/login" element={<App />} />
+        <Route path="/" element={<Barra />} />
       </Routes>
     </BrowserRouter>
     <Toaster />
