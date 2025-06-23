@@ -48,15 +48,6 @@ export function SignInForm() {
         <button className="auth-button" type="submit" disabled={submitting}>
           {flow === "signIn" ? "Entrar" : "Cadastrar"}
         </button>
-        <div className="text-center text-sm text-secondary">
-          <button
-            type="button"
-            className="text-primary hover:text-primary-hover hover:underline font-medium cursor-pointer"
-            onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
-          >
-            {flow === "signIn" ? "Cadastre-se" : "Faça login"}
-          </button>
-        </div>
       </form>
     </div>
   );
