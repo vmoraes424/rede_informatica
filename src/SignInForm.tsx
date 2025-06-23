@@ -49,9 +49,6 @@ export function SignInForm() {
           {flow === "signIn" ? "Entrar" : "Cadastrar"}
         </button>
         <div className="text-center text-sm text-secondary">
-          <span>
-            {flow === "signIn" ? "Não tem uma conta? " : "Já tem uma conta? "}
-          </span>
           <button
             type="button"
             className="text-primary hover:text-primary-hover hover:underline font-medium cursor-pointer"
