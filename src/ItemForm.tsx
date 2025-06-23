@@ -11,8 +11,8 @@ interface ItemFormProps {
     description?: string;
     price: number;
     quantity: number;
-    imageId?: Id<"_storage">;
-    imageUrl?: string;
+    imageIds?: Id<"_storage">[];
+    imageUrls?: (string | null)[];
   } | null;
   categoryId: Id<"categories">;
   onClose: () => void;
@@ -23,7 +23,13 @@ export function ItemForm({ item, categoryId, onClose }: ItemFormProps) {
   const [description, setDescription] = useState(item?.description || "");
   const [price, setPrice] = useState(item?.price?.toString() || "");
   const [quantity, setQuantity] = useState(item?.quantity?.toString() || "");
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [currentImageIds, setCurrentImageIds] = useState<Id<"_storage">[]>(
+    item?.imageIds || []
+  );
+  const [currentImageUrls, setCurrentImageUrls] = useState<(string | null)[]>(
+    item?.imageUrls || []
+  );
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -31,26 +37,53 @@ export function ItemForm({ item, categoryId, onClose }: ItemFormProps) {
   const updateItem = useMutation(api.items.update);
   const generateUploadUrl = useMutation(api.items.generateUploadUrl);
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const totalImages = selectedImages.length + currentImageIds.length;
+
+    if (totalImages + files.length > 5) {
+      toast.error("Você só pode fazer upload de até 5 imagens por item");
+      return;
+    }
+
+    setSelectedImages([...selectedImages, ...files]);
+  };
+
+  const removeSelectedImage = (index: number) => {
+    setSelectedImages(selectedImages.filter((_, i) => i !== index));
+  };
+
+  const removeCurrentImage = (index: number) => {
+    setCurrentImageIds(currentImageIds.filter((_, i) => i !== index));
+    setCurrentImageUrls(currentImageUrls.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !price || !quantity) return;
 
     try {
       setUploading(true);
-      let imageId = item?.imageId;
+      let imageIds = [...currentImageIds];
 
-      if (selectedImage) {
-        const postUrl = await generateUploadUrl();
-        const result = await fetch(postUrl, {
-          method: "POST",
-          headers: { "Content-Type": selectedImage.type },
-          body: selectedImage,
+      // Upload new images
+      if (selectedImages.length > 0) {
+        const uploadPromises = selectedImages.map(async (image) => {
+          const postUrl = await generateUploadUrl();
+          const result = await fetch(postUrl, {
+            method: "POST",
+            headers: { "Content-Type": image.type },
+            body: image,
+          });
+          const json = await result.json();
+          if (!result.ok) {
+            throw new Error(`Upload failed: ${JSON.stringify(json)}`);
+          }
+          return json.storageId;
         });
-        const json = await result.json();
-        if (!result.ok) {
-          throw new Error(`Upload failed: ${JSON.stringify(json)}`);
-        }
-        imageId = json.storageId;
+
+        const newImageIds = await Promise.all(uploadPromises);
+        imageIds = [...imageIds, ...newImageIds];
       }
 
       const itemData = {
@@ -58,7 +91,7 @@ export function ItemForm({ item, categoryId, onClose }: ItemFormProps) {
         description: description.trim() || undefined,
         price: parseFloat(price),
         quantity: parseInt(quantity),
-        imageId,
+        imageIds: imageIds.length > 0 ? imageIds : undefined,
       };
 
       if (item) {
@@ -78,23 +111,26 @@ export function ItemForm({ item, categoryId, onClose }: ItemFormProps) {
       onClose();
     } catch (error) {
       toast.error("Falha ao salvar item");
+      console.log(error);
     } finally {
       setUploading(false);
     }
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    handleSubmit(e).catch(console.error);
-  };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-semibold mb-4">
           {item ? "Editar Item" : "Adicionar Item"}
         </h2>
 
-        <form onSubmit={handleFormSubmit} className="space-y-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit(e).catch(console.error);
+          }}
+          className="space-y-4"
+        >
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Nome *
@@ -153,22 +189,73 @@ export function ItemForm({ item, categoryId, onClose }: ItemFormProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Imagem
+              Imagens (até 5)
             </label>
             <input
               type="file"
               accept="image/*"
+              multiple
               ref={fileInputRef}
-              onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
+              onChange={handleImageChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
-            {item?.imageUrl && !selectedImage && (
-              <img
-                src={item.imageUrl}
-                alt="Imagem atual"
-                className="mt-2 w-20 h-20 object-cover rounded"
-              />
+
+            {/* Current Images */}
+            {currentImageUrls.length > 0 && (
+              <div className="mt-3">
+                <p className="text-sm text-gray-600 mb-2">Imagens atuais:</p>
+                <div className="grid grid-cols-5 gap-2">
+                  {currentImageUrls.map((url, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={url!}
+                        alt={`Imagem atual ${index + 1}`}
+                        className="w-full h-20 object-cover rounded border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeCurrentImage(index)}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
+
+            {/* Selected Images Preview */}
+            {selectedImages.length > 0 && (
+              <div className="mt-3">
+                <p className="text-sm text-gray-600 mb-2">
+                  Novas imagens para upload:
+                </p>
+                <div className="grid grid-cols-5 gap-2">
+                  {selectedImages.map((file, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`Prévia ${index + 1}`}
+                        className="w-full h-20 object-cover rounded border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeSelectedImage(index)}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <p className="text-xs text-gray-500 mt-1">
+              Total de imagens: {currentImageIds.length + selectedImages.length}
+              /5
+            </p>
           </div>
 
           <div className="flex gap-3 pt-4">

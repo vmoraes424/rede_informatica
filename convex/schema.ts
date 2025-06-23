@@ -15,7 +15,8 @@ const applicationTables = {
     description: v.optional(v.string()),
     price: v.number(),
     quantity: v.number(),
-    imageId: v.optional(v.id("_storage")),
+    imageId: v.optional(v.id("_storage")), // Keep for backward compatibility
+    imageIds: v.optional(v.array(v.id("_storage"))),
     categoryId: v.id("categories"),
     userId: v.id("users"),
   }).index("by_category", ["categoryId"])
