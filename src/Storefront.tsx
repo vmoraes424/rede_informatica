@@ -4,11 +4,13 @@ import { api } from "../convex/_generated/api";
 import { ImageCarousel } from "./ImageCarousel";
 import type { Id } from "../convex/_generated/dataModel";
 import zap from "./components/zap.png";
+import { ItemModal } from "./components/ItemModal";
 
 export function Storefront() {
   const categories = useQuery(api.categories.listPublic) || [];
   const [selectedCategory, setSelectedCategory] =
     useState<Id<"categories"> | null>(null);
+  const [modalItem, setModalItem] = useState<any>(null);
 
   const items =
     useQuery(
@@ -79,7 +81,11 @@ export function Storefront() {
             // Mostrar todas as categorias com seus produtos
             <div className="space-y-8">
               {categories.map((category) => (
-                <CategorySection key={category._id} category={category} />
+                <CategorySection
+                  key={category._id}
+                  category={category}
+                  onItemClick={setModalItem}
+                />
               ))}
             </div>
           ) : (
@@ -88,16 +94,25 @@ export function Storefront() {
               <h2 className="text-2xl font-semibold mb-6">
                 {categories.find((c) => c._id === selectedCategory)?.name}
               </h2>
-              <ItemGrid items={items} />
+              <ItemGrid items={items} onItemClick={setModalItem} />
             </div>
           )}
         </div>
       </div>
+      {modalItem && (
+        <ItemModal item={modalItem} onClose={() => setModalItem(null)} />
+      )}
     </div>
   );
 }
 
-function CategorySection({ category }: { category: any }) {
+function CategorySection({
+  category,
+  onItemClick,
+}: {
+  category: any;
+  onItemClick: (item: any) => void;
+}) {
   const items =
     useQuery(api.items.listByCategory, { categoryId: category._id }) || [];
 
@@ -120,12 +135,18 @@ function CategorySection({ category }: { category: any }) {
           )}
         </div>
       </div>
-      <ItemGrid items={items} />
+      <ItemGrid items={items} onItemClick={onItemClick} />
     </div>
   );
 }
 
-function ItemGrid({ items }: { items: any[] }) {
+function ItemGrid({
+  items,
+  onItemClick,
+}: {
+  items: any[];
+  onItemClick: (item: any) => void;
+}) {
   if (items.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500">
@@ -139,7 +160,8 @@ function ItemGrid({ items }: { items: any[] }) {
       {items.map((item) => (
         <div
           key={item._id}
-          className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow"
+          className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => onItemClick(item)}
         >
           {item.imageUrls && item.imageUrls.length > 0 && (
             <ImageCarousel

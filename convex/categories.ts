@@ -12,13 +12,16 @@ export const list = query({
 
     const categories = await ctx.db
       .query("categories")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .withIndex("by_user_and_name", (q) => q.eq("userId", userId))
+      .order("asc")
       .collect();
 
     return Promise.all(
       categories.map(async (category) => ({
         ...category,
-        imageUrl: category.imageId ? await ctx.storage.getUrl(category.imageId) : null,
+        imageUrl: category.imageId
+          ? await ctx.storage.getUrl(category.imageId)
+          : null,
       }))
     );
   },
@@ -27,12 +30,18 @@ export const list = query({
 export const listPublic = query({
   args: {},
   handler: async (ctx) => {
-    const categories = await ctx.db.query("categories").collect();
+    const categories = await ctx.db
+      .query("categories")
+      .withIndex("by_name")
+      .order("asc")
+      .collect();
 
     return Promise.all(
       categories.map(async (category) => ({
         ...category,
-        imageUrl: category.imageId ? await ctx.storage.getUrl(category.imageId) : null,
+        imageUrl: category.imageId
+          ? await ctx.storage.getUrl(category.imageId)
+          : null,
       }))
     );
   },

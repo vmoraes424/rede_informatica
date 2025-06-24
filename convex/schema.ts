@@ -8,7 +8,10 @@ const applicationTables = {
     description: v.optional(v.string()),
     imageId: v.optional(v.id("_storage")),
     userId: v.id("users"),
-  }).index("by_user", ["userId"]),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_name", ["userId", "name"])
+    .index("by_name", ["name"]),
 
   items: defineTable({
     name: v.string(),
@@ -19,7 +22,8 @@ const applicationTables = {
     imageIds: v.optional(v.array(v.id("_storage"))),
     categoryId: v.id("categories"),
     userId: v.id("users"),
-  }).index("by_category", ["categoryId"])
+  })
+    .index("by_category", ["categoryId"])
     .index("by_user", ["userId"]),
 };
 

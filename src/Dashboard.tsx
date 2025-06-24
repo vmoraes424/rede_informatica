@@ -57,7 +57,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto py-12 px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Painel</h1>
         <p className="text-gray-600">Gerencie suas categorias e itens</p>
