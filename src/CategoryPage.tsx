@@ -1,8 +1,10 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { ImageCarousel } from "./ImageCarousel";
 import type { Id } from "../convex/_generated/dataModel";
+import { ItemModal } from "./components/ItemModal";
 
 interface CategoryPageProps {
   category?: {
@@ -16,6 +18,7 @@ interface CategoryPageProps {
 
 export function CategoryPage({ category, onBack }: CategoryPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedItem, setSelectedItem] = useState<any>(null);
 
   const items =
     useQuery(
@@ -172,7 +175,8 @@ export function CategoryPage({ category, onBack }: CategoryPageProps) {
           {filteredItems.map((item) => (
             <div
               key={item._id}
-              className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow"
+              onClick={() => setSelectedItem(item)}
+              className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
             >
               {item.imageUrls && item.imageUrls.length > 0 && (
                 <ImageCarousel
@@ -213,6 +217,9 @@ export function CategoryPage({ category, onBack }: CategoryPageProps) {
             </div>
           ))}
         </div>
+      )}
+      {selectedItem && (
+        <ItemModal item={selectedItem} onClose={() => setSelectedItem(null)} />
       )}
     </div>
   );
