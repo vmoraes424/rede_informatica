@@ -7,11 +7,9 @@ const applicationTables = {
     name: v.string(),
     description: v.optional(v.string()),
     imageId: v.optional(v.id("_storage")),
+    bannerId: v.optional(v.id("_storage")),
     userId: v.id("users"),
-  })
-    .index("by_user", ["userId"])
-    .index("by_user_and_name", ["userId", "name"])
-    .index("by_name", ["name"]),
+  }).index("by_user", ["userId"]),
 
   items: defineTable({
     name: v.string(),
@@ -25,6 +23,11 @@ const applicationTables = {
   })
     .index("by_category", ["categoryId"])
     .index("by_user", ["userId"]),
+
+  banner: defineTable({
+    imageId: v.id("_storage"),
+    userId: v.id("users"),
+  }).index("by_user", ["userId"]),
 };
 
 export default defineSchema({

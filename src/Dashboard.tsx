@@ -1,22 +1,25 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import { useState } from "react";
-import { useQuery, useMutation, useConvexAuth } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { CategoryForm } from "./CategoryForm";
 import { ItemForm } from "./ItemForm";
 import { ImageCarousel } from "./ImageCarousel";
 import { toast } from "sonner";
 import type { Id } from "../convex/_generated/dataModel";
-import { Navigate } from "react-router";
+import { BannerForm } from "./BannerForm";
 
 export function Dashboard() {
   const categories = useQuery(api.categories.list) || [];
+  const banner = useQuery(api.banner.get);
   const [selectedCategory, setSelectedCategory] =
     useState<Id<"categories"> | null>(null);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [showItemForm, setShowItemForm] = useState(false);
+  const [showBannerForm, setShowBannerForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [editingItem, setEditingItem] = useState<any>(null);
-  const { isAuthenticated } = useConvexAuth();
 
   const items =
     useQuery(
@@ -28,53 +31,145 @@ export function Dashboard() {
   const deleteItem = useMutation(api.items.remove);
 
   const handleDeleteCategory = async (id: Id<"categories">) => {
-    if (confirm("Are you sure? This will delete all items in this category.")) {
+    if (confirm("Tem certeza? Isso excluirá todos os itens desta categoria.")) {
       try {
         await deleteCategory({ id });
-        toast.success("Category deleted successfully");
+        toast.success("Categoria excluída com sucesso");
         if (selectedCategory === id) {
           setSelectedCategory(null);
         }
       } catch (error) {
-        toast.error("Failed to delete category");
+        toast.error("Falha ao excluir categoria");
       }
     }
   };
 
   const handleDeleteItem = async (id: Id<"items">) => {
-    if (confirm("Are you sure you want to delete this item?")) {
+    if (confirm("Tem certeza que deseja excluir este item?")) {
       try {
         await deleteItem({ id });
-        toast.success("Item deleted successfully");
+        toast.success("Item excluído com sucesso");
       } catch (error) {
-        toast.error("Failed to delete item");
+        toast.error("Falha ao excluir item");
       }
     }
   };
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+  const selectedCategoryData = selectedCategory
+    ? categories.find((c) => c._id === selectedCategory)
+    : null;
 
   return (
-    <div className="max-w-7xl mx-auto py-12 px-4">
+    <div className="max-w-7xl mx-auto px-4 mb-12">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Painel</h1>
-        <p className="text-gray-600">Gerencie suas categorias e itens</p>
+        <p className="text-gray-600">
+          Gerencie suas categorias, itens e banner da loja
+        </p>
+      </div>
+
+      {/* Banner Management Section */}
+      <div className="mb-8">
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Banner da Loja</h2>
+            <button
+              onClick={() => setShowBannerForm(true)}
+              className="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-primary-hover transition-colors"
+            >
+              {banner ? "Alterar Banner" : "Adicionar Banner"}
+            </button>
+          </div>
+
+          {banner?.imageUrl ? (
+            <div className="relative">
+              <img
+                src={banner.imageUrl}
+                alt="Banner da loja"
+                className="w-full h-32 object-cover rounded-lg border"
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-20 rounded-lg flex items-center justify-center">
+                <span className="text-white font-medium">Banner da Loja</span>
+              </div>
+            </div>
+          ) : (
+            <div className="h-32 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-dashed border-blue-200 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-3xl mb-2">🏪</div>
+                <p className="text-sm text-blue-600 font-medium">
+                  Nenhum banner configurado
+                </p>
+                <p className="text-xs text-blue-500">
+                  Adicione um banner para aparecer no topo da loja
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Categories */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow-sm border p-6">
+            {/* Banner Section */}
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Banner da Categoria
+                </h3>
+                <button
+                  onClick={() => setShowCategoryForm(true)}
+                  className="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-primary-hover transition-colors"
+                >
+                  Adicionar Categoria
+                </button>
+              </div>
+
+              {selectedCategoryData ? (
+                selectedCategoryData.bannerUrl ? (
+                  <div className="relative">
+                    <img
+                      src={selectedCategoryData.bannerUrl}
+                      alt={`Banner de ${selectedCategoryData.name}`}
+                      className="w-full h-24 object-cover rounded-lg border"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-30 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-medium text-sm">
+                        Banner de {selectedCategoryData.name}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-24 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-dashed border-blue-200 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-2xl mb-1">🎨</div>
+                      <p className="text-sm text-blue-600 font-medium">
+                        Sem banner
+                      </p>
+                      <p className="text-xs text-blue-500">
+                        Adicione um banner para esta categoria
+                      </p>
+                    </div>
+                  </div>
+                )
+              ) : (
+                <div className="h-24 bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-2xl mb-1">📋</div>
+                    <p className="text-sm text-gray-600 font-medium">
+                      Selecione uma categoria
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      para visualizar seu banner
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Categorias</h2>
-              <button
-                onClick={() => setShowCategoryForm(true)}
-                className="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-primary-hover transition-colors"
-              >
-                Adicionar Categoria
-              </button>
             </div>
 
             <div className="space-y-3">
@@ -103,6 +198,11 @@ export function Dashboard() {
                           {category.description}
                         </p>
                       )}
+                      {category.bannerUrl && (
+                        <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded mt-1 inline-block">
+                          Com banner
+                        </span>
+                      )}
                     </div>
                     <div className="flex gap-1">
                       <button
@@ -118,9 +218,7 @@ export function Dashboard() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteCategory(category._id).catch(
-                            console.error
-                          );
+                          handleDeleteCategory(category._id);
                         }}
                         className="text-gray-400 hover:text-red-500 text-sm"
                       >
@@ -128,6 +226,17 @@ export function Dashboard() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Banner preview */}
+                  {category.bannerUrl && (
+                    <div className="mt-3">
+                      <img
+                        src={category.bannerUrl}
+                        alt={`Banner de ${category.name}`}
+                        className="w-full h-16 object-cover rounded border"
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -195,12 +304,10 @@ export function Dashboard() {
                         Editar
                       </button>
                       <button
-                        onClick={() => {
-                          handleDeleteItem(item._id).catch(console.error);
-                        }}
+                        onClick={() => handleDeleteItem(item._id)}
                         className="text-red-500 hover:underline text-sm"
                       >
-                        Deletar
+                        Excluir
                       </button>
                     </div>
                   </div>
@@ -231,6 +338,10 @@ export function Dashboard() {
             setEditingItem(null);
           }}
         />
+      )}
+
+      {showBannerForm && (
+        <BannerForm onClose={() => setShowBannerForm(false)} />
       )}
     </div>
   );

@@ -8,6 +8,7 @@ export function Storefront() {
   const categories = useQuery(api.categories.listPublic) || [];
   const [selectedCategory, setSelectedCategory] =
     useState<Id<"categories"> | null>(null);
+  const banner = useQuery(api.banner.getPublic);
 
   // If a category is selected, show the category page
   if (selectedCategory) {
@@ -23,8 +24,22 @@ export function Storefront() {
   // Show categories grid
   return (
     <div className="max-w-7xl mx-auto px-4 mb-12">
+      {banner?.imageUrl && (
+        <div className="mb-8">
+          <div className="relative h-48 md:h-64 lg:h-56 overflow-hidden rounded-lg">
+            <img
+              src={banner.imageUrl}
+              alt="Banner da loja"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Loja</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          {banner?.imageUrl ? "Categorias" : "Loja"}
+        </h1>
         <p className="text-gray-600">Navegue pelas categorias disponíveis</p>
       </div>
 

@@ -12,8 +12,7 @@ export const list = query({
 
     const categories = await ctx.db
       .query("categories")
-      .withIndex("by_user_and_name", (q) => q.eq("userId", userId))
-      .order("asc")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
     return Promise.all(
@@ -21,6 +20,9 @@ export const list = query({
         ...category,
         imageUrl: category.imageId
           ? await ctx.storage.getUrl(category.imageId)
+          : null,
+        bannerUrl: category.bannerId
+          ? await ctx.storage.getUrl(category.bannerId)
           : null,
       }))
     );
@@ -30,17 +32,16 @@ export const list = query({
 export const listPublic = query({
   args: {},
   handler: async (ctx) => {
-    const categories = await ctx.db
-      .query("categories")
-      .withIndex("by_name")
-      .order("asc")
-      .collect();
+    const categories = await ctx.db.query("categories").collect();
 
     return Promise.all(
       categories.map(async (category) => ({
         ...category,
         imageUrl: category.imageId
           ? await ctx.storage.getUrl(category.imageId)
+          : null,
+        bannerUrl: category.bannerId
+          ? await ctx.storage.getUrl(category.bannerId)
           : null,
       }))
     );
@@ -52,6 +53,7 @@ export const create = mutation({
     name: v.string(),
     description: v.optional(v.string()),
     imageId: v.optional(v.id("_storage")),
+    bannerId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -72,6 +74,7 @@ export const update = mutation({
     name: v.string(),
     description: v.optional(v.string()),
     imageId: v.optional(v.id("_storage")),
+    bannerId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
